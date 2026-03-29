@@ -203,7 +203,7 @@ We used a mixed-methods approach combining qualitative interviews with drivers a
 We adopted **Agile (Iterative)** with two-week sprint cycles:
 - **Sprint 1:** Database schema, Prisma migrations, authentication, core API endpoints.
 - **Sprint 2:** USSD flows, MoMo integration, escrow ledger, SMS notifications.
-- **Sprint 3:** Owner/admin dashboards, dispute resolution, scheduler, testing.
+- **Sprint 3:** Owner/admin dashboards, dispute resolution, scheduler, testing. During this sprint, our facilitator reviewed the admin dashboard and noted that raw data tables alone were insufficient for evaluating pilot performance. They recommended we implement visual analytics so administrators could spot trends, compare month-over-month metrics, and identify issues at a glance. We responded by integrating Chart.js (v4) and building 17 interactive charts across all dashboard tabs — line charts for payment and driver trends, bar charts for month-over-month comparisons, and donut charts for status breakdowns — each with KPI summary cards and configurable time range filters.
 
 The driver flow: dial `*384#` → register → browse available bikes with daily rates → select and confirm → agreement created atomically → make daily payments → track ownership via USSD.
 
@@ -237,13 +237,15 @@ The driver flow: dial `*384#` → register → browse available bikes with daily
 
 ### 3.4 System Architecture
 
-*(Refer to Figure 1: System Architecture Diagram)*
+![Figure 1: MotoLift System Architecture](public/images/architecture.png)
 
 Five layers: (1) **Client** — USSD for drivers, web dashboard for owners/admins. (2) **Application** — Express.js with 9 route modules protected by auth middleware. (3) **Service** — MoMo, SMS, Notification, and Scheduler services. (4) **Data** — PostgreSQL with 10 Prisma models and ACID transactions. (5) **External** — MTN MoMo API, Africa's Talking USSD/SMS gateway.
 
 ### 3.5 Use Case Diagram, Class Diagram, ERD, and Other Diagrams
 
-*(Refer to Figures 2-3)*
+![Figure 2: UML Class Diagram](public/images/uml.png)
+
+![Figure 3: Entity-Relationship Diagram](public/images/erd.png)
 
 The database consisted of 10 models: User, Session, Driver, Motorcycle, RentalAgreement, Payment, EscrowLedger, OwnershipRecord, Notification, and Dispute. Key relationships: User → Driver (1:1), Driver → RentalAgreement (1:N), RentalAgreement → Payment (1:N), RentalAgreement → EscrowLedger (1:N).
 
@@ -282,21 +284,31 @@ This chapter covers the implementation details across three sprints. The system 
 
 **Payments:** MoMo service with simulation fallback. On success: update payment, calculate cumulative escrow, auto-complete at 100%.
 
+**Dashboard Analytics (Chart.js):** Following facilitator feedback, we integrated 17 interactive charts across the admin dashboard using Chart.js v4 loaded via CDN. We built three reusable rendering functions — `renderLineChart`, `renderBarChart`, and `renderDonutChart` — that handled canvas element cleanup, color theming, and responsive sizing. Each dashboard tab (Overview, Drivers, Motorcycles, Payments, Disputes) included trend line charts, status breakdown donuts, month-over-month comparison bars, and KPI summary cards with delta indicators. All charts fetched live data from the API and supported time range filtering (All time, Last 24 months, Last 12 months).
+
 **Scheduling:** Daily reminders at 07:00 Kigali time, failed payment retry at 09:00.
 
 ### 4.2 Graphical View of the Project
 
 #### 4.2.1 Screenshots with Description
 
-*(Insert actual screenshots from the running application)*
+![Figure 4: Login Page](public/images/login.png)
 
 **Figure 4: Login Page** — Sign In and Register as Owner tabs. Role-based redirect after authentication.
 
+![Figure 5: Owner Dashboard](public/images/owner.png)
+
 **Figure 5: Owner Dashboard** — Fleet management with stat cards, motorcycle list, status badges, ownership progress bars, driver assignment modal.
+
+![Figure 6: Admin Dashboard](public/images/admin.png)
 
 **Figure 6: Admin Dashboard** — Six tabs (Overview, Drivers, Motorcycles, Payments, Disputes, SMS Log) with 17 Chart.js analytics: line charts for trends, bar charts for MoM comparisons, donut charts for status breakdowns, KPI cards, and time range filters.
 
+![Figure 7: Driver Profile](public/images/driver.png)
+
 **Figure 7: Driver Profile** — Status badge, agreement details, ownership progress bar, payment history table.
+
+![Figure 8: USSD Simulator](public/images/ussd.png)
 
 **Figure 8: USSD Simulator** — Web-based simulator at `/ussd-demo` showing full driver journey: dial, register, browse bikes, select, make payment.
 
@@ -445,6 +457,7 @@ MotoLift demonstrated that a USSD-native platform could transform informal renta
 4. **Database Hosting:** Railway's private networking failed. We pivoted to Neon (cloud PostgreSQL).
 5. **Driver Assignment Redesign:** Owner-based assignment was a bottleneck. We redesigned so drivers browse and select bikes directly from USSD.
 6. **Frontend Without Framework:** Vanilla JS required more DOM manipulation but eliminated build complexity.
+7. **Facilitator Feedback — Dashboard Analytics:** After an initial review, our facilitator pointed out that the admin dashboard lacked data visualization. Raw tables were not enough to evaluate pilot performance or present results convincingly. We had to learn Chart.js from scratch and build 17 charts (line, bar, donut) with reusable rendering functions (`renderLineChart`, `renderBarChart`, `renderDonutChart`), dynamic data fetching, month-over-month delta calculations, and responsive canvas sizing — all in vanilla JavaScript without a charting framework wrapper. This was one of the most time-intensive additions but significantly improved the system's value for administrators and for presenting results in this report.
 
 ### Lessons Learned
 
