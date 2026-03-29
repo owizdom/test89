@@ -43,6 +43,35 @@ app.get("/driver/:id", (req, res) => {
 app.get("/owner", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/owner.html"));
 });
+app.get("/ussd-demo", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/ussd-demo.html"));
+});
+
+// One-time setup endpoint: runs migrations + seed
+app.get("/api/setup", async (req, res) => {
+  try {
+    const { execSync } = require("child_process");
+    console.log("[Setup] Running migrations...");
+    execSync("npx prisma migrate deploy", { stdio: "inherit" });
+    console.log("[Setup] Running seed...");
+    execSync("node prisma/seed.js", { stdio: "inherit" });
+    res.json({ ok: true, message: "Migrations and seed complete" });
+  } catch (err) {
+    console.error("[Setup] Failed:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DB connectivity check
+app.get("/api/health", async (req, res) => {
+  try {
+    const db = require("./db");
+    await db.$queryRaw`SELECT 1`;
+    res.json({ ok: true, db: "connected" });
+  } catch (err) {
+    res.status(500).json({ ok: false, db: err.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`MotoLift server running on port ${PORT}`);
